@@ -2,25 +2,27 @@ package rabbitmq
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 )
 
 type Worker struct {
 	Link string
-	ch   chan Notification
-	ctx  context.Context
+	Ch   chan Notification
+	Ctx  context.Context
 }
 
 type Notification struct {
-	PushToken string
-	Header    string
-	Body      string
-	Os        string
+	PushToken string `json:"push_token"`
+	Title     string `json:"title"`
+	Body      string `json:"body"`
+	Os        string `json:"os"`
 }
 
 func (w *Worker) Start() error {
-
+	fmt.Println("rabbit")
 	conn, err := amqp.Dial(w.Link) // Создаем подключение к RabbitMQ
 	ch, err := conn.Channel()
 	if err != nil {
@@ -55,22 +57,20 @@ func (w *Worker) Start() error {
 	if err != nil {
 		log.Fatalf("failed to register a consumer. Error: %s", err)
 	}
-
-	var forever chan struct{}
-
-	go func() {
-		for message := range messages {
-			w.ch <- Notification{
-				PushToken: "",
-				Header:    "",
-				Body:      "",
-				Os:        "",
+	for {
+		select {
+		case message := <-messages:
+			fmt.Println(message.Body)
+			n := Notification{}
+			err := json.Unmarshal(message.Body, &n)
+			if err != nil {
+				return err
 			}
+			w.Ch <- n
 			log.Printf("received a message: %s", message.Body)
+		case <-w.Ctx.Done():
+			return nil
 		}
-	}()
-
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
+	}
 	return nil
 }
