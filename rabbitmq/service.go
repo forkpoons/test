@@ -6,19 +6,13 @@ import (
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
+	"test/dto"
 )
 
 type Worker struct {
 	Link string
-	Ch   chan Notification
+	Ch   chan dto.Notification
 	Ctx  context.Context
-}
-
-type Notification struct {
-	PushToken string `json:"push_token"`
-	Title     string `json:"title"`
-	Body      string `json:"body"`
-	Os        string `json:"os"`
 }
 
 func (w *Worker) Start() error {
@@ -61,7 +55,7 @@ func (w *Worker) Start() error {
 		select {
 		case message := <-messages:
 			fmt.Println(message.Body)
-			n := Notification{}
+			n := dto.Notification{}
 			err := json.Unmarshal(message.Body, &n)
 			if err != nil {
 				return err

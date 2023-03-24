@@ -7,19 +7,22 @@ services:
       RABBITMQ_DEFAULT_PASS: "rabbitmq"
       RABBITMQ_DEFAULT_VHOST: "/"
     ports:
-      - 15672:15672
+      - "15672:15672"
       - "5672:5672"
     expose:
       - 15672
       - 5672
-  api:
+  notification:
     build: .
     container_name: "notification"
     command: make run
     depends_on:
       - rabbitmq
     environment:
-      NAME: rabbitmq
+      LOGIN: "rabbitmq"
+      PASS: "rabbitmq"
+      LINK: rabbitmq
+      PORT: 5672
     links:
       - rabbitmq
     volumes:
